@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import static org.springframework.web.reactive.function.server.RequestPredicates.GET;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
@@ -15,12 +16,7 @@ public class Controller {
 
   private static final String ENDPOINT = "http://<your-local-ip>:9090";
 
-  private final WebClient client;
-
-  public Controller(WebClient.Builder builder) {
-    super();
-    this.client = builder.build();
-  }
+  private final RestTemplate template = new RestTemplate();
 
   @Bean
   public RouterFunction<ServerResponse> router() {
@@ -29,13 +25,11 @@ public class Controller {
   }
 
   Mono<ServerResponse> handle(ServerRequest request) {
+    
+    String helloWorld =
+        template.getForObject(ENDPOINT + "/hello", String.class)
+            + template.getForObject(ENDPOINT + "/world", String.class);
 
-    Mono<String> helloMono =
-        client.get().uri(ENDPOINT + "/hello").retrieve().bodyToMono(String.class);
-
-    Mono<String> worldMono =
-        client.get().uri(ENDPOINT + "/world").retrieve().bodyToMono(String.class);
-
-    return helloMono.zipWith(worldMono, (h, w) -> h + w).flatMap(ServerResponse.ok()::bodyValue);
+    return Mono.just(helloWorld).flatMap(ServerResponse.ok()::bodyValue);
   }
 }
