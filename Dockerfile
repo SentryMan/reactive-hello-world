@@ -19,5 +19,5 @@ CMD java \
 	-Dcom.sun.management.jmxremote.rmi.port=9010 \ 
     -Xmx190M \
 	-jar reactive-hello-world.jar
-EXPOSE 9090
+EXPOSE 8080
 
