@@ -15,25 +15,34 @@ import reactor.core.publisher.Mono;
 public class Controller {
 
   private static final String ENDPOINT = "http://<your-local-ip>:9090";
-
-  private final RestTemplate template = new RestTemplate();
-
+  private static final AsyncRestTemplate template = new AsyncRestTemplate();
+  
   @Bean
   public RouterFunction<ServerResponse> router() {
 
     return RouterFunctions.route(GET("helloworld"), this::handle);
   }
 
- Mono<ServerResponse> handle(ServerRequest request) {
+
+  Mono<ServerResponse> handle(ServerRequest request) {
 
     Mono<String> helloMono =
-        Mono.fromCallable(() -> template.getForObject(ENDPOINT + "/hello", String.class))
-            .subscribeOn(Schedulers.boundedElastic());
+        Mono.<ResponseEntity<String>>create(
+                sink ->
+                    template
+                        .getForEntity(ENDPOINT + "/hello", String.class)
+                        .addCallback(sink::success, sink::error))
+            .map(ResponseEntity::getBody);
 
     Mono<String> worldMono =
-        Mono.fromCallable(() -> template.getForObject(ENDPOINT + "/world", String.class))
-            .subscribeOn(Schedulers.boundedElastic());
+        Mono.<ResponseEntity<String>>create(
+                sink ->
+                    template
+                        .getForEntity(ENDPOINT + "/world", String.class)
+                        .addCallback(sink::success, sink::error))
+            .map(ResponseEntity::getBody);
 
     return helloMono.zipWith(worldMono, (h, w) -> h + w).flatMap(ServerResponse.ok()::bodyValue);
   }
 }
+
