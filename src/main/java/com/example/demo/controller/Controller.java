@@ -16,12 +16,12 @@ public class Controller {
   private static final String ENDPOINT = "http://<your-local-ip>:9090";
 
    
-  private final ExchangeFunction exchangeFunction;
+  private HttpClient client;
   
   public Controller() {
-    super();
-    this.exchangeFunction = ExchangeFunctions.create(new ReactorClientHttpConnector());
-  }
+   super();
+   this.client = HttpClient.create();
+   }
   
   @Bean
   public RouterFunction<ServerResponse> router() {
@@ -31,18 +31,12 @@ public class Controller {
 
   Mono<ServerResponse> handle(ServerRequest request) {
 
-    ClientRequest request1 =
-        ClientRequest.create(HttpMethod.GET, URI.create(ENDPOINT + "/hello")).build();
+    Flux<String> helloMono =
+        client.get().uri(ENDPOINT + "/hello").responseContent().asByteArray().map(String::new);
 
-    ClientRequest request2 =
-        ClientRequest.create(HttpMethod.GET, URI.create(ENDPOINT + "/world")).build();
+    Flux<String> worldMono =
+        client.get().uri(ENDPOINT + "/world").responseContent().asByteArray().map(String::new);
 
-    Mono<String> helloMono =
-        exchangeFunction.exchange(request1).flatMap(r -> r.bodyToMono(String.class));
-
-    Mono<String> worldMono =
-        exchangeFunction.exchange(request2).flatMap(r -> r.bodyToMono(String.class));
-
-    return helloMono.zipWith(worldMono, (h, w) -> h + w).flatMap(ServerResponse.ok()::bodyValue);
+    return ServerResponse.ok().body(helloMono.zipWith(worldMono, (h, w) -> h + w), String.class);
   }
 }
