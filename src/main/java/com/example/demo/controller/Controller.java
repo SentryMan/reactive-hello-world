@@ -22,6 +22,12 @@ public class Controller {
     super();
     this.exchangeFunction = ExchangeFunctions.create(new ReactorClientHttpConnector());
   }
+  
+  @Bean
+  public RouterFunction<ServerResponse> router() {
+
+    return RouterFunctions.route(GET("helloworld"), this::handle);
+  }
 
   Mono<ServerResponse> handle(ServerRequest request) {
 
